@@ -1,0 +1,146 @@
+---
+title: "Twitter Sentiment Analysis: Model Comparison"
+course: "CKME136_Capstone"
+author: "Farhan Zia, 500543185"
+supervisor: "Francis Palma"
+date: '2018-11-05'
+output: html_document
+---
+
+## PROJECT SUMMARY
+
+```{r}
+# The dataset selected pulls tweets following the 2017 Unite the Right rally, also known as the Charlottesville riots – a white supremacist rally in Charlottesville, VA on Aug 11-12, 2017. The rally and it’s counter-protest eventually turned violent, making international headlines with many drawing negative attention to President Trump’s remarks following the events. The dataset pulls Twitter posts over a 4-day period following Trump defending his stance that there was “blame on both sides”, which was widely viewed as an endorsement for the rally.
+
+# The initial proposal for this project was to categorize tweets as sympathetic or unsympathetic. This, however, has proved to be too challenging as the language is similar among tweets with competive opinions. For example, there are tweets that are sympathetic to the white supremacists and others that are sympathetic to the anti-protestors but may share majority of the same language and would both be categorized by a dictionary as sympathetic. 
+
+# To proceed with the project, I'll be adjusting my scope to a standard sentiment analysis. The goal will be to categorize tweets into three categories - negative, neutral or positive. I will continue to look to determine whether Naive Bayes or Logistic Regression will be the more accurate predictor. To do so, I have manually rated the first 1,000 tweets based on (1) my own interpretation of the language and (2) Google Natural Language Processor (via: https://cloud.google.com/natural-language/). These two categorizations are not always aligned as the former will inclube my own biased interpretation and emotional response (e.g., contextual understanding, sarcasm understanding, etc.) despite an attempt to stay objective and to classify each text independently and the latter is based on Google's assigned dictionary.
+
+```
+
+## STEP 1: LOADING PACKAGES
+
+```{r}
+# Loading basic libraries
+
+
+# Installing sentiment packages
+
+install.packages("RSentiment")
+  # Source: https://cran.r-project.org/src/contrib/RSentiment_2.2.2.tar.gz 
+
+install.packages("SentimentAnalysis")
+  # Source: https://cran.r-project.org/src/contrib/SentimentAnalysis_1.3-2.tar.gz
+
+
+
+```
+
+
+## STEP 2: DATA LOADING AND PREPARATION
+
+```{r}
+# Uploading dataset files
+aug15 <- read.csv("aug15_sample.csv", header = T)
+aug16 <- read.csv("aug16_sample.csv", header = T)
+aug17 <- read.csv("aug17_sample.csv", header = T)
+aug18 <- read.csv("aug18_sample.csv", header = T)
+
+# Combining datasets into single file
+alldays <- rbind(aug15,aug16,aug17,aug18)
+
+# Creating new ID column
+alldays$id <- 1:nrow(alldays)
+head(alldays)
+tail(alldays)
+
+# Isolating ID, tweet text, hashtags
+alldays <- alldays[,-c(2:13)]
+alldays <- alldays[,-c(3:11)]
+
+colnames(alldays)[1] <- "ID"
+colnames(alldays)[2] <- "Tweet Text"
+colnames(alldays)[3] <- "Hashtags Used"
+
+head(alldays)
+summary(alldays)
+
+write.csv(alldays, file = "alldays.csv")
+
+# Removing blank tweets
+alldays[!is.na(alldays$`Tweet Text`) | alldays$`Tweet Text`=="",]
+
+# Removing tweets without commentary
+  # This includes tweets that are only retweets or contain multimedia (e.g., images, URLs, emoji, etc.)
+
+
+
+
+```
+
+
+## WORKING AREA
+
+```{r}
+
+
+
+
+tweets <- complete.cases(alldays[,2])
+head(tweets)
+summary(alldays)
+
+tweets <- data.frame(alldays[,1], alldays(complete.cases(alldays$'Tweet Text')), alldays$'Hashtags Used')
+head(tweets)
+summary(tweets)
+
+
+complete.cases(alldays[,2])
+head(alldays)
+
+is.na(alldays[,2])
+
+alldays[!is.na(alldays$`Tweet Text`) | alldays$`Tweet Text`=="",]
+summary(alldays)
+
+
+
+
+
+
+```
+
+
+
+## STEP 3: LOADING DICTIONARIES
+
+```{r}
+
+# Loading dictionaries
+
+
+# Combine dictionaries to working lexicon
+
+
+# Add classification column
+
+
+
+```
+
+
+## STEP 4: BUILD MODEL
+
+```{r}
+
+# Classification function
+
+
+
+
+
+```
+
+
+
+
