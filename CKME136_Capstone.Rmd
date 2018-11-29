@@ -21,18 +21,30 @@ output: html_document
 ## STEP 1: LOADING PACKAGES
 
 ```{r}
-# Loading basic libraries
-
-
-# Installing sentiment packages
-
+# Installing sentiment packages (you may need to approve/confirm installation)
+install.packages("tidyverse")
+install.packages("tidytext")
+install.packages("dplyr")
+install.packages("tidyr")
+install.packages("ggplot2")
+install.packages("broom")
+install.packages("tm")
+install.packages("quanteda")
 install.packages("RSentiment")
-  # Source: https://cran.r-project.org/src/contrib/RSentiment_2.2.2.tar.gz 
-
 install.packages("SentimentAnalysis")
-  # Source: https://cran.r-project.org/src/contrib/SentimentAnalysis_1.3-2.tar.gz
+install.packages("tokenizers")
 
+# Installing sentiment dictionary
+install.packages("wordnet")
+install.packages("http://wordnetcode.princeton.edu/3.0/WNdb-3.0.tar.gz", repos = NULL)
+  # Source: Princeton University "About WordNet." WordNet. Princeton University. 2010. 
 
+# Loading libraries
+library("wordnet")
+library("stringr")
+#library("tidyverse")  #currently causes error/library not recognized
+#library("tidytext")   #currently causes error/library not recognized
+library("glue")
 
 ```
 
@@ -54,93 +66,118 @@ alldays$id <- 1:nrow(alldays)
 head(alldays)
 tail(alldays)
 
-# Isolating ID, tweet text, hashtags
+# Isolating ID, tweet text
 alldays <- alldays[,-c(2:13)]
-alldays <- alldays[,-c(3:11)]
+alldays <- alldays[,-c(3:12)]
 
+# Updating column titles
 colnames(alldays)[1] <- "ID"
 colnames(alldays)[2] <- "Tweet Text"
-colnames(alldays)[3] <- "Hashtags Used"
 
 head(alldays)
 summary(alldays)
 
-write.csv(alldays, file = "alldays.csv")
+# Exporting first 500 tweets
+write.csv(alldays[c(1:500),], file = "alldays_500.csv")
 
-# Removing blank tweets
-alldays[!is.na(alldays$`Tweet Text`) | alldays$`Tweet Text`=="",]
-
-# Removing tweets without commentary
-  # This includes tweets that are only retweets or contain multimedia (e.g., images, URLs, emoji, etc.)
-
-
-
+# Importing first 500 tweets with sentiment graded by human and by Google's Natural Language Processing API
+alldays_500 <- read.csv("alldays_500_graded.csv", header = T)
 
 ```
 
 
-## WORKING AREA
+
+
+## STEP 3: TEXT TOKENIZATON
 
 ```{r}
+# Isolating tweet text
+tweet_text <- as.data.frame(alldays_500$Tweet.Text)
+head(tweet_text)
 
+# Read a single tweet text as individual words
+workingtweet <- glue(as.character(tweet_text[1]), sep = "")   #producing numbers and not individual words
+head(workingtweet)
 
+# Remove additional spaces (e.g., at the end of a tweet)
+workingtweet <- trimws(workingtweet)
+head(workingtweet)
 
+# Read file
+workingfile <- glue(read.file(workingtweet))
 
-tweets <- complete.cases(alldays[,2])
-head(tweets)
-summary(alldays)
-
-tweets <- data.frame(alldays[,1], alldays(complete.cases(alldays$'Tweet Text')), alldays$'Hashtags Used')
-head(tweets)
-summary(tweets)
-
-
-complete.cases(alldays[,2])
-head(alldays)
-
-is.na(alldays[,2])
-
-alldays[!is.na(alldays$`Tweet Text`) | alldays$`Tweet Text`=="",]
-summary(alldays)
-
-
-
-
-
-
+# Extracting individual words
+#tweet_tokens <- data.frame(text = workingfile) %>% unnest.tokens(word, Tweet.Text)
+#error: cannot find function "unnest.tokens"
+#error seems to be caused during installation of packages, incompatable with R version (though this does not seem to be an issue online) 
+#cannot test code past this point as this is critical to the function below
 ```
 
+## STEP 4: ASSIGNING SENTIMENT
+```{r}
+# Assigning sentiment dictionary lexicon
+bing <- as.data.frame(unzip(opinion-lexicon-English.rar))
+  # Bing dictionary source: https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html
 
+# Function to assess sentiment of a single tweet by: 
+GetSentiment <- function(alldays_500){
+  # Select a tweet, separate individual words and trim spaces
+  senti_tweet <- glue(alldays_500$Tweet.Text, sep = "")
+  senti_tweet <- trimws(senti_tweet)
+  # Read the tweet text in a new file
+  senti_text <- glue(read.file(senti_tweet))
+  # Tokenize
+  senti_tokens <- data.frame(text = senti_text) %>% unnest.tokens(word, Tweet.Text)
+  # Run sentiment classifier function
+  sentiment <- senti_tokens %>%
+    # Extracting sentiment words from Bing dictionary
+    inner_join(get.sentiments("bing")) %>%
+    # Count positive and negative words
+    count(sentiment) %>%
+    spread(sentiment, n, fill = 0) %>%
+    # Classify overall sentiment by identifying if there are more positive or negative words
+    mutate(sentiment = positive - negative)
+  # Add tweet ID
+    mutate(ID = alldays_500$ID)
+  # Classify sentiment as 1 = positive, 0 = neutral, -1 = negative to match Human_Rating and Google_Rating in alldays file
+    mutate(R_Rating = 
+             if (sentiment > 0) {print("1")} 
+              else if (sentiment < 0) {print("-1")}
+                else if (sentiment == 0) {print("0")}
+          )
+  # Return sentiment dataframe
+  return(sentiment)
+}
 
-## STEP 3: LOADING DICTIONARIES
+# Test above function
+GetSentiment(alldays_500[1])
+# Should return: Negative word count, Positive word count, Remainder of positive - negative word counts, Tweet ID, Simplified classification (1, 0, -1)
+
+# Applying above function to entire dataset
+# Creating a new holder for output
+senti_database <- data.frame()
+
+# Apply above function to entire dataset
+for(i in alldays_500){
+  senti_database <- rbind(senti_database, GetSentiment(i), alldays_500)
+}
+```
+
+## STEP 5: REVIEWING RESULTS
 
 ```{r}
+# Frequency graph of Human Rating
+plot(table(senti_database$Human_Rating), xlab = "Human Sentiment Score", ylab = "Frequency", main = "Frequency Distribution of Human Scored Sentiment")
 
-# Loading dictionaries
+# Frequency graph of Google Rating
+plot(table(senti_database$Google_Rating), xlab = "Google Sentiment Score", ylab = "Frequency", main = "Frequency Distribution of Google Scored Sentiment")
 
+# Frequency graph of R Rating
+plot(table(senti_database$R_Rating), xlab = "R Function Sentiment Score", ylab = "Frequency", main = "Frequency Distribution of R Function-Scored Sentiment")
 
-# Combine dictionaries to working lexicon
-
-
-# Add classification column
-
-
-
-```
-
-
-## STEP 4: BUILD MODEL
-
-```{r}
-
-# Classification function
-
-
-
-
+# Significance test of rating types
+t.test(senti_database$Human_Rating, senti_database$Google_Rating, senti_database$R_Rating)
 
 ```
-
-
 
 
