@@ -14,37 +14,43 @@ output: html_document
 
 # The initial proposal for this project was to categorize tweets as sympathetic or unsympathetic. This, however, has proved to be too challenging as the language is similar among tweets with competive opinions. For example, there are tweets that are sympathetic to the white supremacists and others that are sympathetic to the anti-protestors but may share majority of the same language and would both be categorized by a dictionary as sympathetic. 
 
-# To proceed with the project, I'll be adjusting my scope to a standard sentiment analysis. The goal will be to categorize tweets into three categories - negative, neutral or positive. I will continue to look to determine whether Naive Bayes or Logistic Regression will be the more accurate predictor. To do so, I have manually rated the first 1,000 tweets based on (1) my own interpretation of the language and (2) Google Natural Language Processor (via: https://cloud.google.com/natural-language/). These two categorizations are not always aligned as the former will inclube my own biased interpretation and emotional response (e.g., contextual understanding, sarcasm understanding, etc.) despite an attempt to stay objective and to classify each text independently and the latter is based on Google's assigned dictionary.
+# To proceed with the project, I'll be adjusting my scope to a standard sentiment analysis. The goal will be to categorize tweets into three categories - negative, neutral or positive. I have manually rated the first 1,000 tweets based on (1) my own interpretation of the language and (2) Google Natural Language Processor (via: https://cloud.google.com/natural-language/). These two categorizations are not always aligned as the former will inclube my own biased interpretation and emotional response (e.g., contextual understanding, sarcasm understanding, etc.) despite an attempt to stay objective and to classify each text independently and the latter is based on Google's assigned dictionary. The goal of this project will be to compare the three methods os sentiment analysis -- human vs. Google vs. R.
 
 ```
+
 
 ## STEP 1: LOADING PACKAGES
 
 ```{r}
-# Installing sentiment packages (you may need to approve/confirm installation)
-install.packages("tidyverse")
-install.packages("tidytext")
-install.packages("dplyr")
-install.packages("tidyr")
-install.packages("ggplot2")
-install.packages("broom")
-install.packages("tm")
-install.packages("quanteda")
-install.packages("RSentiment")
-install.packages("SentimentAnalysis")
-install.packages("tokenizers")
+# Installing sentiment packages (you may need to approve/confirm installation in R console to proceed)
+install.packages("dplyr")                 # For data manipulation
+install.packages("tidyr")                 # For keeping output clean and orderly
+install.packages("ggplot2")               # For data visualization
+install.packages("broom")                 # For tidy data frames
+install.packages("tm")                    # For text mining
+install.packages("quanteda")              # For text analysis
+install.packages("RSentiment")            # For sentiment analysis
+install.packages("SentimentAnalysis")     # For sentiment analysis
+install.packages("tokenizers")            # For tokenizing text
+install.packages("tidyverse")             # Set of packages for keeping output clean and orderly
+install.packages("tidytext")              # Text mining tools
+  # Source: https://CRAN.R-project.org/package=tidyverse
 
-# Installing sentiment dictionary
-install.packages("wordnet")
+install.packages("wordnet")               # Sentiment dictionary lexicon
+# Must visit URL below and download file. Once downloaded please unzip tar file and note the location of the resulting "/dict" folder.
 install.packages("http://wordnetcode.princeton.edu/3.0/WNdb-3.0.tar.gz", repos = NULL)
   # Source: Princeton University "About WordNet." WordNet. Princeton University. 2010. 
 
 # Loading libraries
 library("wordnet")
+# May need to reset this location to where your "/dict" folder is located
+setDict("/Users/farhan/Downloads/dict")
+
 library("stringr")
-#library("tidyverse")  #currently causes error/library not recognized
-#library("tidytext")   #currently causes error/library not recognized
-library("glue")
+library("tidyverse")                                          #currently causes error/library not recognized
+setDict("/Users/farhan/Downloads/tidyverse")                  #currently causes error
+library("tidytext")                                           #currently causes error/library not recognized
+library("glue")                                               #currently causes error/library not recognized
 
 ```
 
@@ -86,8 +92,6 @@ alldays_500 <- read.csv("alldays_500_graded.csv", header = T)
 ```
 
 
-
-
 ## STEP 3: TEXT TOKENIZATON
 
 ```{r}
@@ -96,7 +100,7 @@ tweet_text <- as.data.frame(alldays_500$Tweet.Text)
 head(tweet_text)
 
 # Read a single tweet text as individual words
-workingtweet <- glue(as.character(tweet_text[1]), sep = "")   #producing numbers and not individual words
+workingtweet <- glue(as.character(tweet_text[1]), sep = "")   #error: producing numbers and not individual words
 head(workingtweet)
 
 # Remove additional spaces (e.g., at the end of a tweet)
@@ -107,13 +111,15 @@ head(workingtweet)
 workingfile <- glue(read.file(workingtweet))
 
 # Extracting individual words
-#tweet_tokens <- data.frame(text = workingfile) %>% unnest.tokens(word, Tweet.Text)
+tweet_tokens <- data.frame(text = workingfile) %>% unnest.tokens(word, Tweet.Text)
 #error: cannot find function "unnest.tokens"
 #error seems to be caused during installation of packages, incompatable with R version (though this does not seem to be an issue online) 
 #cannot test code past this point as this is critical to the function below
 ```
 
+
 ## STEP 4: ASSIGNING SENTIMENT
+
 ```{r}
 # Assigning sentiment dictionary lexicon
 bing <- as.data.frame(unzip(opinion-lexicon-English.rar))
@@ -163,7 +169,7 @@ for(i in alldays_500){
 }
 ```
 
-## STEP 5: REVIEWING RESULTS
+## STEP 5: COMPARING ANALYTICAL METHODS
 
 ```{r}
 # Frequency graph of Human Rating
@@ -175,9 +181,23 @@ plot(table(senti_database$Google_Rating), xlab = "Google Sentiment Score", ylab 
 # Frequency graph of R Rating
 plot(table(senti_database$R_Rating), xlab = "R Function Sentiment Score", ylab = "Frequency", main = "Frequency Distribution of R Function-Scored Sentiment")
 
+# Plotting scores against each other
+senti_plot <- senti_database %>% gather(key, value, ID)
+ggplot(senti_plot, mapping = aes(x = ID, y = value, colour = key)) + geomline()
+
 # Significance test of rating types
 t.test(senti_database$Human_Rating, senti_database$Google_Rating, senti_database$R_Rating)
 
+# Identifying the number of times Human, Google and R scored a tweet's senitment the same
+match(senti_database$Human_Rating, senti_database$Google_Rating, senti_database$R_Rating)
+
+# Identifying the rows where Human, Google and R agreed on sentiment
+count(which(senti_database$Human_Rating == senti_database$Google_Rating == senti_database$R_Rating))
+
+# Linear regression model
+linearmodel <- lm(formula = senti_database$ID ~ senti_database$Human_Rating + senti_database$Google_Rating + senti_database$R_Rating, data = senti_database)
+print(linearmodel)
+summary(linearmodel)
 ```
 
 
