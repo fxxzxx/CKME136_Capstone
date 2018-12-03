@@ -174,12 +174,33 @@ for(i in alldays_500){
 ```{r}
 # Frequency graph of Human Rating
 plot(table(senti_database$Human_Rating), xlab = "Human Sentiment Score", ylab = "Frequency", main = "Frequency Distribution of Human Scored Sentiment")
+plot(table(alldays_500$Human_Rating), xlab = "Human Sentiment Score", ylab = "Frequency", main = "Frequency Distribution of Human-Scored Sentiment")
 
 # Frequency graph of Google Rating
 plot(table(senti_database$Google_Rating), xlab = "Google Sentiment Score", ylab = "Frequency", main = "Frequency Distribution of Google Scored Sentiment")
+plot(table(alldays_500$Google_Rating), xlab = "Google Sentiment Score", ylab = "Frequency", main = "Frequency Distribution of Google Scored Sentiment")
 
 # Frequency graph of R Rating
 plot(table(senti_database$R_Rating), xlab = "R Function Sentiment Score", ylab = "Frequency", main = "Frequency Distribution of R Function-Scored Sentiment")
+
+# Comparing Human and Google scores
+ggplot(alldays_500$Google_Rating ~ alldays_500$Human_Rating, xlab = "Google Sentiment Score", ylab = "Human Sentiment Score", main = "Comparing Google and Human Scored Sentiment")
+
+plot(alldays_500$ID, alldays_500$Human_Rating, type = "l", col = "red", xlab = "Tweet ID", ylab = "Human Rating (Red)", main = "Comparing Google and Human Scored Sentiment")
+par(new = T)
+plot(alldays_500$ID, alldays_500$Google_Rating, tyle = "l", col = "blue", xlab = "Tweet ID", ylab = "Google Rating (Blue)")
+
+agreed <- matrix(c(sum(alldays_500$Human_Rating == "1" & alldays_500$Google_Rating == "1")), sum(alldays_500$Human_Rating == "-1" & alldays_500$Google_Rating == "-1"), sum(alldays_500$Human_Rating == "0" & alldays_500$Google_Rating == "0"))
+
+agreedpos <- table(c(sum(alldays_500$Human_Rating == "1" & alldays_500$Google_Rating =="1")))
+print(agreedpos)
+agreedneg <- table(c(sum(alldays_500$Human_Rating == "-1" & alldays_500$Google_Rating =="-1")))
+print(agreedneg)
+agreedneu <- table(c(sum(alldays_500$Human_Rating == "0" & alldays_500$Google_Rating =="0")))
+print(agreedneu)
+agreement <- data.frame(agreedpos, agreedneg, agreedneu)
+colnames(agreement) <- c("positive", "pos freq", "negative", "neg freq", "neutral", "neu freq")
+agreement
 
 # Plotting scores against each other
 senti_plot <- senti_database %>% gather(key, value, ID)
@@ -194,10 +215,20 @@ match(senti_database$Human_Rating, senti_database$Google_Rating, senti_database$
 # Identifying the rows where Human, Google and R agreed on sentiment
 count(which(senti_database$Human_Rating == senti_database$Google_Rating == senti_database$R_Rating))
 
-# Linear regression model
+# Identifying where Human and Google agreed on sentiment
+
+plot(alldays_500$Google_Rating)
+hist(alldays_500$Human_Rating, alldays_500$Google_Rating)
+
+# Linear regression model: Human, Google, R
 linearmodel <- lm(formula = senti_database$ID ~ senti_database$Human_Rating + senti_database$Google_Rating + senti_database$R_Rating, data = senti_database)
 print(linearmodel)
 summary(linearmodel)
+
+# Linear regression model: Human, Google
+linmod <- lm (formula = alldays_500$ID ~ alldays_500$Human_Rating + alldays_500$Google_Rating, data = alldays_500)
+plot(linmod)
+summary(linmod)
 ```
 
 
