@@ -1,0 +1,309 @@
+---
+title: "Twitter Sentiment Analysis: Model Comparison"
+course: "CKME136_Capstone"
+author: "Farhan Zia, 500543185"
+supervisor: "Francis Palma"
+date: '2018-11-05'
+output: html_document
+---
+
+## PROJECT SUMMARY
+
+```{r}
+# The dataset selected pulls tweets following the 2017 Unite the Right rally, also known as the Charlottesville riots – a white supremacist rally in Charlottesville, VA on Aug 11-12, 2017. The rally and it’s counter-protest eventually turned violent, making international headlines with many drawing negative attention to President Trump’s remarks following the events. The dataset pulls Twitter posts over a 4-day period following Trump defending his stance that there was “blame on both sides”, which was widely viewed as an endorsement for the rally.
+
+# The initial proposal for this project was to categorize tweets as sympathetic or unsympathetic. This, however, has proved to be too challenging as the language is similar among tweets with competive opinions. For example, there are tweets that are sympathetic to the white supremacists and others that are sympathetic to the anti-protestors but may share majority of the same language and would both be categorized by a dictionary as sympathetic. 
+
+# To proceed with the project, I'll be adjusting my scope to a standard sentiment analysis. The goal will be to categorize tweets into three categories - negative, neutral or positive. I have manually rated the first 1,000 tweets based on (1) my own interpretation of the language and (2) Google Natural Language Processor (via: https://cloud.google.com/natural-language/). These two categorizations are not always aligned as the former will inclube my own biased interpretation and emotional response (e.g., contextual understanding, sarcasm understanding, etc.) despite an attempt to stay objective and to classify each text independently and the latter is based on Google's assigned dictionary. The goal of this project will be to compare the three methods os sentiment analysis -- human vs. Google vs. R.
+
+```
+
+
+## STEP 1: LOADING PACKAGES
+
+```{r}
+# Installing sentiment packages (you may need to approve/confirm installation in R console to proceed)
+#install.packages("dplyr")                 # For data manipulation
+#install.packages("tidyr")                 # For keeping output clean and orderly
+#install.packages("ggplot2")               # For data visualization
+#install.packages("broom")                 # For tidy data frames
+#install.packages("tm")                    # For text mining
+#install.packages("quanteda")              # For text analysis
+#install.packages("RSentiment")            # For sentiment analysis
+#install.packages("SentimentAnalysis")     # For sentiment analysis
+#install.packages("tokenizers")            # For tokenizing text
+#install.packages("tidyverse")             # Set of packages for keeping output clean and orderly
+#install.packages("tidytext")              # Text mining tools
+  # Source: https://CRAN.R-project.org/package=tidyverse
+
+#install.packages("wordnet")               # Sentiment dictionary lexicon
+# Must visit URL below and download file. Once downloaded please unzip tar file and note the location of the resulting "/dict" folder.
+#install.packages("http://wordnetcode.princeton.edu/3.0/WNdb-3.0.tar.gz", repos = NULL)
+  # Source: Princeton University "About WordNet." WordNet. Princeton University. 2010. 
+
+# Loading libraries
+#library("wordnet")
+# May need to reset this location to where your "/dict" folder is located
+#setDict("/Users/farhan/Downloads/dict")
+
+#library("stringr")
+#library("tidyverse")                                          #currently causes error/library not recognized
+#setDict("/Users/farhan/Downloads/tidyverse")                  #currently causes error
+#library("tidytext")                                           #currently causes error/library not recognized
+#library("glue")                                               #currently causes error/library not recognized
+
+```
+
+
+## STEP 2: DATA LOADING AND PREPARATION
+
+```{r}
+# Uploading dataset files
+#aug15 <- read.csv("aug15_sample.csv", header = T)
+#aug16 <- read.csv("aug16_sample.csv", header = T)
+#aug17 <- read.csv("aug17_sample.csv", header = T)
+#aug18 <- read.csv("aug18_sample.csv", header = T)
+
+# Combining datasets into single file
+#alldays <- rbind(aug15,aug16,aug17,aug18)
+
+# Creating new ID column
+#alldays$id <- 1:nrow(alldays)
+#head(alldays)
+#tail(alldays)
+
+# Isolating ID, tweet text
+#alldays <- alldays[,-c(2:13)]
+#alldays <- alldays[,-c(3:12)]
+
+# Updating column titles
+#colnames(alldays)[1] <- "ID"
+#colnames(alldays)[2] <- "Tweet Text"
+
+#head(alldays)
+#summary(alldays)
+
+# Exporting first 500 tweets
+#write.csv(alldays[c(1:500),], file = "alldays_500.csv")
+
+# Importing first 500 tweets with sentiment graded by human and by Google's Natural Language Processing API
+#alldays_500 <- read.csv("alldays_500_graded.csv", header = T)
+
+```
+
+
+## STEP 3: TEXT TOKENIZATON
+
+```{r}
+# Isolating tweet text
+#tweet_text <- as.data.frame(alldays_500$Tweet.Text)
+#head(tweet_text)
+
+# Read a single tweet text as individual words
+#workingtweet <- glue(as.character(tweet_text[1]), sep = "")   #error: producing numbers and not individual words
+#head(workingtweet)
+
+# Remove additional spaces (e.g., at the end of a tweet)
+#workingtweet <- trimws(workingtweet)
+#head(workingtweet)
+
+# Read file
+#workingfile <- glue(read.file(workingtweet))
+
+# Extracting individual words
+#tweet_tokens <- data.frame(text = workingfile) %>% unnest.tokens(word, Tweet.Text)
+#error: cannot find function "unnest.tokens"
+#error seems to be caused during installation of packages, incompatable with R version (though this does not seem to be an issue online) 
+#cannot test code past this point as this is critical to the function below
+```
+
+
+## STEP 4: ASSIGNING SENTIMENT
+
+```{r}
+# Assigning sentiment dictionary lexicon
+#bing <- as.data.frame(unzip(opinion-lexicon-English.rar))
+  # Bing dictionary source: https://www.cs.uic.edu/~liub/FBS/sentiment-analysis.html
+
+# Function to assess sentiment of a single tweet by: 
+#GetSentiment <- function(alldays_500){
+  # Select a tweet, separate individual words and trim spaces
+  #senti_tweet <- glue(alldays_500$Tweet.Text, sep = "")
+  #senti_tweet <- trimws(senti_tweet)
+  # Read the tweet text in a new file
+  #senti_text <- glue(read.file(senti_tweet))
+  # Tokenize
+  #senti_tokens <- data.frame(text = senti_text) %>% unnest.tokens(word, Tweet.Text)
+  # Run sentiment classifier function
+  #sentiment <- senti_tokens %>%
+    # Extracting sentiment words from Bing dictionary
+    #inner_join(get.sentiments("bing")) %>%
+    # Count positive and negative words
+    #count(sentiment) %>%
+    #spread(sentiment, n, fill = 0) %>%
+    # Classify overall sentiment by identifying if there are more positive or negative words
+    #mutate(sentiment = positive - negative)
+  # Add tweet ID
+    #mutate(ID = alldays_500$ID)
+  # Classify sentiment as 1 = positive, 0 = neutral, -1 = negative to match Human_Rating and Google_Rating in alldays file
+    #mutate(R_Rating = 
+             #if (sentiment > 0) {print("1")} 
+              #else if (sentiment < 0) {print("-1")}
+                #else if (sentiment == 0) {print("0")}
+          #)
+  # Return sentiment dataframe
+  #return(sentiment)
+#}
+
+# Test above function
+#GetSentiment(alldays_500[1])
+# Should return: Negative word count, Positive word count, Remainder of positive - negative word counts, Tweet ID, Simplified classification (1, 0, -1)
+
+# Applying above function to entire dataset
+# Creating a new holder for output
+#senti_database <- data.frame()
+
+# Apply above function to entire dataset
+#for(i in alldays_500){
+  #senti_database <- rbind(senti_database, GetSentiment(i), alldays_500)
+#}
+```
+
+## STEP 5: COMPARING ANALYTICAL METHODS
+
+```{r}
+# Frequency graph of Human Rating
+#plot(table(senti_database$Human_Rating), xlab = "Human Sentiment Score", ylab = "Frequency", main = "Frequency Distribution of Human Scored Sentiment")
+#plot(table(alldays_500$Human_Rating), xlab = "Human Sentiment Score", ylab = "Frequency", main = "Frequency Distribution of Human-Scored Sentiment")
+
+# Frequency graph of Google Rating
+#plot(table(senti_database$Google_Rating), xlab = "Google Sentiment Score", ylab = "Frequency", main = "Frequency Distribution of Google Scored Sentiment")
+#plot(table(alldays_500$Google_Rating), xlab = "Google Sentiment Score", ylab = "Frequency", main = "Frequency Distribution of Google Scored Sentiment")
+
+# Frequency graph of R Rating
+#plot(table(senti_database$R_Rating), xlab = "R Function Sentiment Score", ylab = "Frequency", main = "Frequency Distribution of R Function-Scored Sentiment")
+
+# Comparing Human and Google scores
+#ggplot(alldays_500$Google_Rating ~ alldays_500$Human_Rating, xlab = "Google Sentiment Score", ylab = "Human Sentiment Score", main = "Comparing Google and Human Scored Sentiment")
+
+#plot(alldays_500$ID, alldays_500$Human_Rating, type = "l", col = "red", xlab = "Tweet ID", ylab = "Human Rating (Red)", main = "Comparing Google and Human Scored Sentiment")
+#par(new = T)
+#plot(alldays_500$ID, alldays_500$Google_Rating, tyle = "l", col = "blue", xlab = "Tweet ID", ylab = "Google Rating (Blue)")
+
+#agreed <- matrix(c(sum(alldays_500$Human_Rating == "1" & alldays_500$Google_Rating == "1")), sum(alldays_500$Human_Rating == "-1" & alldays_500$Google_Rating == "-1"), sum(alldays_500$Human_Rating == "0" & alldays_500$Google_Rating == "0"))
+
+#agreedpos <- table(c(sum(alldays_500$Human_Rating == "1" & alldays_500$Google_Rating =="1")))
+#print(agreedpos)
+#agreedneg <- table(c(sum(alldays_500$Human_Rating == "-1" & alldays_500$Google_Rating =="-1")))
+#print(agreedneg)
+#agreedneu <- table(c(sum(alldays_500$Human_Rating == "0" & alldays_500$Google_Rating =="0")))
+#print(agreedneu)
+#agreement <- data.frame(agreedpos, agreedneg, agreedneu)
+#colnames(agreement) <- c("positive", "pos freq", "negative", "neg freq", "neutral", "neu freq")
+#agreement
+
+# Plotting scores against each other
+#senti_plot <- senti_database %>% gather(key, value, ID)
+#ggplot(senti_plot, mapping = aes(x = ID, y = value, colour = key)) + geomline()
+
+# Significance test of rating types
+#t.test(senti_database$Human_Rating, senti_database$Google_Rating, senti_database$R_Rating)
+
+# Identifying the number of times Human, Google and R scored a tweet's senitment the same
+#match(senti_database$Human_Rating, senti_database$Google_Rating, senti_database$R_Rating)
+
+# Identifying the rows where Human, Google and R agreed on sentiment
+#count(which(senti_database$Human_Rating == senti_database$Google_Rating == senti_database$R_Rating))
+
+# Identifying where Human and Google agreed on sentiment
+
+#plot(alldays_500$Google_Rating)
+#hist(alldays_500$Human_Rating, alldays_500$Google_Rating)
+
+# Linear regression model: Human, Google, R
+#linearmodel <- lm(formula = senti_database$ID ~ senti_database$Human_Rating + senti_database$Google_Rating + senti_database$R_Rating, data = senti_database)
+#rint(linearmodel)
+#summary(linearmodel)
+
+# Linear regression model: Human, Google
+#linmod <- lm (formula = alldays_500$ID ~ alldays_500$Human_Rating + alldays_500$Google_Rating, data = alldays_500)
+#plot(linmod)
+#summary(linmod)
+```
+
+
+
+## APPENDIX: REATTEMPT 1 -- using Rstem and sentiment
+```{r}
+# URL installation of Rstem and Sentiment packages
+install.packages("http://cran.r-project.org/src/contrib/Archive/Rstem/Rstem_0.4-1.tar.gz")
+install.packages("http://cran.r-project.org/src/contrib/Archive/sentiment/sentiment_0.2.tar.gz")
+
+# Archive installation of Rstem and Sentiment
+library(remotes)
+install_version("Rstem", "0.4-1")
+
+library(remotes)
+install_version("sentiment", "0.2")
+1
+
+# Installing additional packages
+install.packages("pacman")
+install.packages("Rtools")
+install.packages("ggplot")
+install.packages("devtools")
+y
+y
+install.packages("plotly")
+y
+y
+install.packages("dplyr")
+y
+y
+
+# Loading libraries
+library("Rstem")
+library("sentiment")
+library("devtools")
+library("plotly")
+library("dplyr")
+library("ggplot2")
+
+# Import data
+alldays_500 <- data.frame(read.csv("alldays_500_graded.csv", header = T))
+head(alldays_500)
+
+# Classify sentiment of tweet text
+tweet_sent <- classify_emotion(alldays_500[,3], algorithm = 'bayes')
+
+# Assign sentiment polarity of tweet text
+tweet_polar = classify_polarity(alldays_500[,3], algorithm = 'bayes')
+
+# Combining results
+tweet_frame = data.frame(ID = alldays_500[,2], Tweets = alldays_500[,3], Emotions = tweet_sent('BEST_FIT'), Machine = tweet_polar('BEST_FIT'), Human =  alldays_500[,4], Google =  alldays_500[,5], stringsAsFactors = F)
+tweet_frame[is.na(tweet_frame)] <- "NA"
+
+# Plot emotion assignment
+plot_ly(tweet_frame, x = Machine, type = "histogram" %>% layout(yaxis = list(title = "count"), title = "Machine Sentiment Analysis"))
+```
+
+## APPENDIX: REATTEMPT 2 -- using sentimentr
+```{r}
+# Install packages
+install.packages("sentimentr")
+install.packages("devtools")
+
+# Loading libraries
+library("sentimentr")
+library("devtools")
+
+# Import data
+alldays_500 <- data.frame(read.csv("alldays_500_graded.csv", header = T))
+
+# Classify sentiment of tweet text
+mutate(sentiment = get_sentiment(alldays_500[,3])) %>%
+# Assign sentiment categories
+mutate(sentiment_class = if_else(sentiment >0, "Positive", if_else(sentiment <0, "Negative", "Neutral"))) %>%
+select(sentiment, sentiment_class, alldays_500[,3])
+```
+
